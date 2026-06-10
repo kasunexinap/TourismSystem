@@ -19,8 +19,4 @@
     <ProjectReference Include="..\TourismSystem.Infrastructure\TourismSystem.Infrastructure.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Controllers\" />
-  </ItemGroup>
-
 </Project>

@@ -1,42 +1,109 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TourismSystem.Application.DTOs.Vehicle;
 using TourismSystem.Application.Interfaces;
+using TourismSystem.Domain.Entities;
 
 namespace TourismSystem.Application.Services
 {
     public class VehicleService : IVehicleService
     {
-        public VehicleService()
+        private readonly IApplicationDbContext _context;
+        public VehicleService(IApplicationDbContext context)
         {
+            _context = context;
         }
 
-        public Task<CreateVehicleResponseDto> CreateVehicleAsync(CreateVehicleRequestDto request, string createdBy)
+        public async Task<CreateVehicleResponseDto> CreateVehicleAsync(
+        CreateVehicleRequestDto request,
+        string createdBy)
         {
-            throw new NotImplementedException();
+            var vehicle = new Vehicle
+            {
+                Name = request.Name,
+                RatePerKm = request.RatePerKm,
+                IsActive = true,
+                CreatedBy = createdBy,
+                CreatedDate = DateTime.UtcNow
+            };
+
+            _context.Vehicles.Add(vehicle);
+            await _context.SaveChangesAsync();
+
+            return new CreateVehicleResponseDto
+            {
+                VehicleId = vehicle.Id,
+                Name = vehicle.Name,
+                RatePerKm = vehicle.RatePerKm,
+                CreatedDate = vehicle.CreatedDate
+            };
         }
 
-        public Task<bool> DeleteVehicleAsync(int vehicleId, string modifiedBy)
+        public async Task<List<VehicleResponseDto>> GetAllVehiclesAsync()
         {
-            throw new NotImplementedException();
+            return await _context.Vehicles
+                .Where(x => x.IsActive)
+                .Select(x => new VehicleResponseDto
+                {
+                    VehicleId = x.Id,
+                    Name = x.Name,
+                    RatePerKm = x.RatePerKm
+                })
+                .ToListAsync();
         }
 
-        public Task<List<VehicleResponseDto>> GetAllVehiclesAsync()
+        public async Task<VehicleResponseDto?> GetVehicleByIdAsync(int vehicleId)
         {
-            throw new NotImplementedException();
+            return await _context.Vehicles
+                .Where(x => x.Id == vehicleId && x.IsActive)
+                .Select(x => new VehicleResponseDto
+                {
+                    VehicleId = x.Id,
+                    Name = x.Name,
+                    RatePerKm = x.RatePerKm
+                })
+                .FirstOrDefaultAsync();
         }
 
-        public Task<VehicleResponseDto?> GetVehicleByIdAsync(int vehicleId)
+        public async Task<bool> UpdateVehicleAsync(
+            UpdateVehicleRequestDto request,
+            string modifiedBy)
         {
-            throw new NotImplementedException();
+            var vehicle = await _context.Vehicles
+                .FirstOrDefaultAsync(x => x.Id == request.VehicleId && x.IsActive);
+
+            if (vehicle == null)
+                return false;
+
+            vehicle.Name = request.Name;
+            vehicle.RatePerKm = request.RatePerKm;
+            vehicle.ModifiedBy = modifiedBy;
+            vehicle.ModifiedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
         }
 
-        public Task<bool> UpdateVehicleAsync(UpdateVehicleRequestDto request, string modifiedBy)
+        public async Task<bool> DeleteVehicleAsync(
+            int vehicleId,
+            string modifiedBy)
         {
-            throw new NotImplementedException();
+            var vehicle = await _context.Vehicles
+                .FirstOrDefaultAsync(x => x.Id == vehicleId && x.IsActive);
+
+            if (vehicle == null)
+                return false;
+
+            vehicle.IsActive = false;
+            vehicle.ModifiedBy = modifiedBy;
+            vehicle.ModifiedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
         }
 
         // Implement methods from IVehicleService here

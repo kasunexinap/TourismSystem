@@ -15,6 +15,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddScoped<IApplicationDbContext>(provider =>
+    provider.GetRequiredService<AppDbContext>());
 
 builder.Services.AddScoped<ITripService, TripService>();
 
