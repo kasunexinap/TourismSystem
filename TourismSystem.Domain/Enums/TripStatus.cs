@@ -8,10 +8,10 @@ namespace TourismSystem.Domain.Enums
 {
     public enum TripStatus
     {
-        Created = 0,
-        Planned = 1,
-        InProgress = 2,
-        Completed = 3,
-        Cancelled = 4
+        Created = 1,
+        Assigned = 2,
+        InProgress = 3,
+        Completed = 4,
+        Cancelled = 5
     }
 }

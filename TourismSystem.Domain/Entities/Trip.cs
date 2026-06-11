@@ -11,12 +11,23 @@ namespace TourismSystem.Domain.Entities
 {
     public class Trip:BaseEntity
     {
-        public int Id { get; set; }
-        public int? RegisteredVehicleId { get; set; }
-        public decimal DistanceKm { get; set; }
-        public decimal RatePerKm { get; set; }
-        public decimal TotalCost { get; set; }
+
         public int VehicleId { get; set; }
+
+        public int? RegisteredVehicleId { get; set; }
+
+        public decimal DistanceKm { get; set; }
+
+        public decimal RatePerKm { get; set; }
+
+        public decimal TotalCost { get; set; }
+
+        public DateTime TripDate { get; set; }
+
         public TripStatus Status { get; set; } = TripStatus.Created;
+
+        public Vehicle Vehicle { get; set; } = null!;
+
+        public RegisteredVehicle? RegisteredVehicle { get; set; }
     }
 }

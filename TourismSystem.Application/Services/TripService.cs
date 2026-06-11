@@ -1,49 +1,198 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using TourismSystem.Application.DTOs.Trip;
 using TourismSystem.Application.Interfaces;
+using TourismSystem.Domain.Entities;
+using TourismSystem.Domain.Enums;
 
-namespace TourismSystem.Application.Services
+namespace TourismSystem.Application.Services;
+
+public class TripService : ITripService
 {
-    public class TripService : ITripService
+    private readonly IApplicationDbContext _context;
+    private readonly ILogger<TripService> _logger;
+
+    public TripService(
+        IApplicationDbContext context,
+        ILogger<TripService> logger)
     {
-        public TripService()
+        _context = context;
+        _logger = logger;
+    }
+
+    public async Task<CreateTripResponseDto> CreateTripAsync(
+        CreateTripRequestDto request,
+        string createdBy)
+    {
+        _logger.LogInformation(
+            "Creating trip for VehicleId={VehicleId}",
+            request.VehicleId);
+
+        if (request.DistanceKm > 1000)
         {
+            throw new ArgumentException(
+                "Distance cannot exceed 1000 km.");
         }
 
-        public Task<bool> AssignRegisteredVehicleAsync(int tripId, int registeredVehicleId, string modifiedBy)
+        var vehicle = await _context.Vehicles
+            .FirstOrDefaultAsync(x =>
+                x.Id == request.VehicleId &&
+                x.IsActive);
+
+        if (vehicle == null)
         {
-            throw new NotImplementedException();
+            throw new ArgumentException(
+                "Vehicle not found.");
         }
 
-        public Task<bool> CancelTripAsync(int tripId, string modifiedBy)
+        var trip = new Trip
         {
-            throw new NotImplementedException();
-        }
+            VehicleId = request.VehicleId,
+            DistanceKm = request.DistanceKm,
+            RatePerKm = vehicle.RatePerKm,
+            TotalCost = request.DistanceKm * vehicle.RatePerKm,
+            Status = TripStatus.Created,
+            TripDate = DateTime.UtcNow,
+            CreatedBy = createdBy,
+            CreatedDate = DateTime.UtcNow,
+            IsActive = true
+        };
 
-        public Task<CreateTripResponseDto> CreateTripAsync(CreateTripRequestDto request, string createdBy)
+        _context.Trips.Add(trip);
+
+        await _context.SaveChangesAsync();
+
+        return new CreateTripResponseDto
         {
-            throw new NotImplementedException();
-        }
+            TripId = trip.Id,
+            VehicleId = trip.VehicleId,
+            DistanceKm = trip.DistanceKm,
+            RatePerKm = trip.RatePerKm,
+            TotalCost = trip.TotalCost,
+            Status = trip.Status,
+            TripDate = trip.TripDate
+        };
+    }
 
-        public Task<List<TripResponseDto>> GetAllTripsAsync()
-        {
-            throw new NotImplementedException();
-        }
+    public async Task<List<TripResponseDto>> GetAllTripsAsync()
+    {
+        return await _context.Trips
+            .Where(x => x.IsActive)
+            .Select(x => new TripResponseDto
+            {
+                TripId = x.Id,
+                VehicleId = x.VehicleId,
+                VehicleName = x.Vehicle.Name,
+                RegisteredVehicleId = x.RegisteredVehicleId,
+                DistanceKm = x.DistanceKm,
+                RatePerKm = x.RatePerKm,
+                TotalCost = x.TotalCost,
+                Status = x.Status,
+                TripDate = x.TripDate
+            })
+            .ToListAsync();
+    }
 
-        public Task<TripResponseDto?> GetTripByIdAsync(int tripId)
-        {
-            throw new NotImplementedException();
-        }
+    public async Task<TripResponseDto?> GetTripByIdAsync(
+        int tripId)
+    {
+        return await _context.Trips
+            .Where(x =>
+                x.Id == tripId &&
+                x.IsActive)
+            .Select(x => new TripResponseDto
+            {
+                TripId = x.Id,
+                VehicleId = x.VehicleId,
+                VehicleName = x.Vehicle.Name,
+                RegisteredVehicleId = x.RegisteredVehicleId,
+                DistanceKm = x.DistanceKm,
+                RatePerKm = x.RatePerKm,
+                TotalCost = x.TotalCost,
+                Status = x.Status,
+                TripDate = x.TripDate
+            })
+            .FirstOrDefaultAsync();
+    }
 
-        public Task<bool> UpdateTripStatusAsync(int tripId, int status, string modifiedBy)
-        {
-            throw new NotImplementedException();
-        }
+    public async Task<bool> AssignRegisteredVehicleAsync(
+        int tripId,
+        int registeredVehicleId,
+        string modifiedBy)
+    {
+        var trip = await _context.Trips
+            .FirstOrDefaultAsync(x =>
+                x.Id == tripId &&
+                x.IsActive);
 
-        // Implement methods from ITripService here
+        if (trip == null)
+            return false;
+
+        var registeredVehicle =
+            await _context.RegisteredVehicles
+                .FirstOrDefaultAsync(x =>
+                    x.Id == registeredVehicleId &&
+                    x.IsActive &&
+                    x.IsAvailable);
+
+        if (registeredVehicle == null)
+            return false;
+
+        trip.RegisteredVehicleId =
+            registeredVehicleId;
+
+        trip.Status = TripStatus.Assigned;
+
+        registeredVehicle.IsAvailable = false;
+
+        trip.ModifiedBy = modifiedBy;
+        trip.ModifiedDate = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return true;
+    }
+
+    public async Task<bool> UpdateTripStatusAsync(
+        int tripId,
+        TripStatus status,
+        string modifiedBy)
+    {
+        var trip = await _context.Trips
+            .FirstOrDefaultAsync(x =>
+                x.Id == tripId &&
+                x.IsActive);
+
+        if (trip == null)
+            return false;
+
+        trip.Status = status;
+        trip.ModifiedBy = modifiedBy;
+        trip.ModifiedDate = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return true;
+    }
+
+    public async Task<bool> CancelTripAsync(
+        int tripId,
+        string modifiedBy)
+    {
+        var trip = await _context.Trips
+            .FirstOrDefaultAsync(x =>
+                x.Id == tripId &&
+                x.IsActive);
+
+        if (trip == null)
+            return false;
+
+        trip.Status = TripStatus.Cancelled;
+        trip.ModifiedBy = modifiedBy;
+        trip.ModifiedDate = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return true;
     }
 }

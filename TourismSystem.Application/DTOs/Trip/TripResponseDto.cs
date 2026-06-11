@@ -11,9 +11,11 @@ namespace TourismSystem.Application.DTOs.Trip
     {
         public int TripId { get; set; }
 
-        public string VehicleName { get; set; }
+        public int VehicleId { get; set; }
 
-        public string? LicenseNumber { get; set; }
+        public string VehicleName { get; set; } = string.Empty;
+
+        public int? RegisteredVehicleId { get; set; }
 
         public decimal DistanceKm { get; set; }
 
@@ -23,6 +25,6 @@ namespace TourismSystem.Application.DTOs.Trip
 
         public TripStatus Status { get; set; }
 
-        public DateTime CreatedDate { get; set; }
+        public DateTime TripDate { get; set; }
     }
 }
