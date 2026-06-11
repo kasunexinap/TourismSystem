@@ -12,5 +12,7 @@ namespace TourismSystem.Domain.Entities
         public int Id { get; set; }
         public string Name { get; set; }
         public decimal RatePerKm { get; set; }
+        public ICollection<RegisteredVehicle> RegisteredVehicles { get; set; }
+    = new List<RegisteredVehicle>();
     }
 }

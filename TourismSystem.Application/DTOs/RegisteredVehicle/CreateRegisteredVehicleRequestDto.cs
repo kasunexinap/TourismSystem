@@ -9,10 +9,15 @@ namespace TourismSystem.Application.DTOs.RegisteredVehicle
     public class CreateRegisteredVehicleRequestDto
     {
         public int VehicleId { get; set; }
-        public string LicenseNumber { get; set; }
-        public string OwnerName { get; set; }
-        public string OwnerContactNo { get; set; }
+
+        public string LicenseNumber { get; set; } = string.Empty;
+
+        public string OwnerName { get; set; } = string.Empty;
+
+        public string OwnerContactNo { get; set; } = string.Empty;
+
         public int ManufactureYear { get; set; }
-        public string? Color { get; set; }
+
+        public string Color { get; set; } = string.Empty;
     }
 }
