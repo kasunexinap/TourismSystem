@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using TourismSystem.API.Middleware;
 using TourismSystem.Application.Interfaces;
 using TourismSystem.Application.Services;
 using TourismSystem.Infrastructure.Data;
@@ -32,6 +33,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseHttpsRedirection();
 

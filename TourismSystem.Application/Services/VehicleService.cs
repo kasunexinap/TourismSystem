@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,38 +14,61 @@ namespace TourismSystem.Application.Services
     public class VehicleService : IVehicleService
     {
         private readonly IApplicationDbContext _context;
-        public VehicleService(IApplicationDbContext context)
+        private readonly ILogger<VehicleService> _logger;
+        public VehicleService(IApplicationDbContext context, ILogger<VehicleService> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         public async Task<CreateVehicleResponseDto> CreateVehicleAsync(
         CreateVehicleRequestDto request,
         string createdBy)
         {
-            var vehicle = new Vehicle
+            _logger.LogInformation(
+             "Creating vehicle. Name={VehicleName}",
+             request.Name);
+            try
             {
-                Name = request.Name,
-                RatePerKm = request.RatePerKm,
-                IsActive = true,
-                CreatedBy = createdBy,
-                CreatedDate = DateTime.UtcNow
-            };
 
-            _context.Vehicles.Add(vehicle);
-            await _context.SaveChangesAsync();
 
-            return new CreateVehicleResponseDto
+                var vehicle = new Vehicle
+                {
+                    Name = request.Name,
+                    RatePerKm = request.RatePerKm,
+                    IsActive = true,
+                    CreatedBy = createdBy,
+                    CreatedDate = DateTime.UtcNow
+                };
+
+                _context.Vehicles.Add(vehicle);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation(
+               "Vehicle created successfully. VehicleId={VehicleId}",
+               vehicle.Id);
+
+                return new CreateVehicleResponseDto
+                {
+                    VehicleId = vehicle.Id,
+                    Name = vehicle.Name,
+                    RatePerKm = vehicle.RatePerKm,
+                    CreatedDate = vehicle.CreatedDate
+                };
+            }
+            catch (Exception ex)
             {
-                VehicleId = vehicle.Id,
-                Name = vehicle.Name,
-                RatePerKm = vehicle.RatePerKm,
-                CreatedDate = vehicle.CreatedDate
-            };
+                _logger.LogError(
+               ex,
+               "Error occurred while creating vehicle. Name={VehicleName}",
+               request.Name);
+
+                throw;
+            }
         }
 
         public async Task<List<VehicleResponseDto>> GetAllVehiclesAsync()
         {
+            _logger.LogInformation("Getting all active vehicles");
             return await _context.Vehicles
                 .Where(x => x.IsActive)
                 .Select(x => new VehicleResponseDto
@@ -58,6 +82,9 @@ namespace TourismSystem.Application.Services
 
         public async Task<VehicleResponseDto?> GetVehicleByIdAsync(int vehicleId)
         {
+            _logger.LogInformation(
+           "Getting vehicle. VehicleId={VehicleId}",
+           vehicleId);
             return await _context.Vehicles
                 .Where(x => x.Id == vehicleId && x.IsActive)
                 .Select(x => new VehicleResponseDto

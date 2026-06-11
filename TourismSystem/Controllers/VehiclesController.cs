@@ -10,10 +10,12 @@ namespace TourismSystem.API.Controllers
     public class VehiclesController : ControllerBase
     {
         private readonly IVehicleService _vehicleService;
+        private readonly ILogger<VehiclesController> _logger;
 
-        public VehiclesController(IVehicleService vehicleService)
+        public VehiclesController(IVehicleService vehicleService, ILogger<VehiclesController> logger)
         {
             _vehicleService = vehicleService;
+            _logger = logger;
         }
 
         [HttpPost]
